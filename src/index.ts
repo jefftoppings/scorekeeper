@@ -1,12 +1,10 @@
-// index.ts
+import express from "express";
+import routes from "./routes";
 
-import express, { Request, Response } from 'express';
 const app = express();
 const port = 3000;
 
-app.get('/', (req: Request, res: Response) => {
-  res.send('Hello, this is my TypeScript Node.js backend!');
-});
+app.use("/", routes);
 
 app.listen(port, () => {
   console.log(`Server is running at http://localhost:${port}`);
