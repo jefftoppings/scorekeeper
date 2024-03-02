@@ -47,6 +47,20 @@ export const postMexicanTrainHandler = async (
       .send("Invalid request. ReadableId and Players are required.");
     return;
   }
+
+  // Check if a row with the same "readableId" already exists
+  const existingRow = await supabase
+    .from(MEXICAN_TRAIN_TABLE_NAME)
+    .select()
+    .eq("readableId", readableId)
+    .single();
+  if (existingRow.data) {
+    res
+      .status(409)
+      .send(`A record with the same readableId already exists: ${readableId}`);
+    return;
+  }
+
   const config: MexicanTrainGameConfig = {
     id: uuidv4(),
     readableId: readableId as string,
@@ -55,6 +69,7 @@ export const postMexicanTrainHandler = async (
     currentRound: 1,
     scores: {},
   };
+
   try {
     const { data, error }: PostgrestResponse<any> = await supabase
       .from(MEXICAN_TRAIN_TABLE_NAME)
@@ -62,6 +77,7 @@ export const postMexicanTrainHandler = async (
     if (error) {
       throw error;
     }
+
     res.json(config);
   } catch (error) {
     console.error("Error creating Mexican Train record:", error.message);
