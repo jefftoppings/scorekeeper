@@ -4,5 +4,14 @@ export interface MexicanTrainGameConfig {
   created?: Date;
   players?: string[];
   currentRound?: number;
-  scores?: { [key: string]: { round: number; total: number }[] };
+  scores?: ScoresByPlayer;
+}
+
+export interface ScoresByPlayer {
+  [key: string]: RoundScore[];
+}
+
+export interface RoundScore {
+  round: number;
+  total: number;
 }

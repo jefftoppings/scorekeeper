@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import { PostgrestResponse } from "@supabase/supabase-js";
 import supabase from "../db";
-import { MexicanTrainGameConfig } from "./interfaces";
+import { MexicanTrainGameConfig, ScoresByPlayer } from "./interfaces";
 
 const { v4: uuidv4 } = require("uuid");
 const MEXICAN_TRAIN_TABLE_NAME = "mexican-train";
@@ -86,15 +86,33 @@ export const postMexicanTrainHandler = async (
 };
 
 export const putMexicanTrainHandler = async (
-  req: Request<{ id: string }>,
+  req: Request<any, any, { id: string; scores: object }>,
   res: Response
 ) => {
   try {
-    console.log({ req });
+    const id: string = req?.query?.id as string;
+    const scores: string = req?.query?.scores as string;
+    if (!id || !scores) {
+      res
+        .status(400)
+        .send("Invalid request. Id and Scores are required.");
+      return;
+    }  
+    const jsonScores: ScoresByPlayer = JSON.parse(scores);
+    if (!isScoresValid(jsonScores)) {
+      res
+        .status(400)
+        .send("Invalid request. Scores are not valid.");
+      return;
+    }
+
+    // Assuming req.body contains the "scores" JSON object
     const { data, error }: PostgrestResponse<any> = await supabase
       .from(MEXICAN_TRAIN_TABLE_NAME)
-      .update(req.body)
-      .match({ id: req.params.id });
+      .update({
+        scores: jsonScores,
+      })
+      .match({ id: id });
 
     if (error) {
       throw error;
@@ -106,6 +124,42 @@ export const putMexicanTrainHandler = async (
     res.status(500).send("Internal Server Error");
   }
 };
+
+function isScoresValid(scores: ScoresByPlayer): boolean {
+  const values = Object.values(scores);
+  const firstPlayer = values[0];
+  const firstPlayerRounds = firstPlayer.map((score) => score.round);
+  values.forEach((playerScores) => {
+    const rounds = playerScores.map((score) => score.round);
+    if (!arraysHaveSameValuesAndLength(firstPlayerRounds, rounds)) {
+      return false;
+    }
+    if (firstPlayer.length !== playerScores.length) {
+      return false;
+    }
+  });
+  return true;
+}
+
+function arraysHaveSameValuesAndLength<T>(array1: T[], array2: T[]): boolean {
+  // Check if both arrays have the same length
+  if (array1.length !== array2.length) {
+    return false;
+  }
+  // Create copies of the arrays to avoid modifying the original arrays
+  const copy1 = [...array1];
+  const copy2 = [...array2];
+  // Sort the copied arrays
+  copy1.sort();
+  copy2.sort();
+  // Compare the sorted arrays element by element
+  for (let i = 0; i < copy1.length; i++) {
+    if (copy1[i] !== copy2[i]) {
+      return false;
+    }
+  }
+  return true;
+}
 
 export const deleteMexicanTrainHandler = async (
   req: Request<{ id: string }>,
