@@ -1,7 +1,9 @@
 import { Request, Response } from "express";
 import { PostgrestResponse } from "@supabase/supabase-js";
 import supabase from "../db";
+import { MexicanTrainGameConfig } from "./interfaces";
 
+const { v4: uuidv4 } = require("uuid");
 const MEXICAN_TRAIN_TABLE_NAME = "mexican-train";
 
 export const getMexicanTrainHandler = async (
@@ -33,18 +35,34 @@ export const getMexicanTrainHandler = async (
   }
 };
 
-export const postMexicanTrainHandler = async (req: Request, res: Response) => {
+export const postMexicanTrainHandler = async (
+  req: Request<{ readableId: string; players: string[] }>,
+  res: Response
+) => {
+  const readableId = req?.query?.readableId;
+  const players = req?.query?.players;
+  if (!readableId || !players) {
+    res
+      .status(400)
+      .send("Invalid request. ReadableId and Players are required.");
+    return;
+  }
+  const config: MexicanTrainGameConfig = {
+    id: uuidv4(),
+    readableId: readableId as string,
+    created: new Date(),
+    players: players as string[],
+    currentRound: 1,
+    scores: {},
+  };
   try {
-    console.log({ req });
     const { data, error }: PostgrestResponse<any> = await supabase
       .from(MEXICAN_TRAIN_TABLE_NAME)
-      .insert(req.body);
-
+      .insert(config);
     if (error) {
       throw error;
     }
-
-    res.json(data);
+    res.json(config);
   } catch (error) {
     console.error("Error creating Mexican Train record:", error.message);
     res.status(500).send("Internal Server Error");
