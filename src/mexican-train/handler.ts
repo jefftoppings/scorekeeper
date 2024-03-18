@@ -106,11 +106,13 @@ export const putMexicanTrainHandler = async (
       return;
     }
 
-    // Assuming req.body contains the "scores" JSON object
+    const updatedRound = jsonScores[Object.keys(jsonScores)[0]].length + 1;
+
     const { data, error }: PostgrestResponse<any> = await supabase
       .from(MEXICAN_TRAIN_TABLE_NAME)
       .update({
         scores: jsonScores,
+        currentRound: updatedRound,
       })
       .match({ id: id });
 
